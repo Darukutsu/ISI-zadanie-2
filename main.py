@@ -5,26 +5,41 @@ import random
 
 medzera_medzi_krokmi = 0.4  # default rychlost.
 
+## NOTE
+# sachovnica je reprezentovana 1 rozmernym polom
+# sachovnica[riadok] = stlpec --> na riadku N v stlpci M je kralovna
+# ak sachovnica[riadok] = -1 tak pole je volne
+#    0   1   2   3   4   5   6   7
+#   ________________________________
+# 0 |--||--||--||--||--||--||--||--|
+# 1 |--||--||--||--||--||--||--||--|
+# 2 |--||--||--||--||--||--||--||--|
+# 3 |--||--||--||--||--||--||--||--|
+# 4 |--||--||--||--||--||--||--||--|
+# 5 |--||--||--||--||--||--||--||--|
+# 6 |--||--||--||--||--||--||--||--|
+# 7 |--||--||--||--||--||--||--||--|
+#   ________________________________
 sachovnica = []  # sachovnica a.k.a hlavne pole
 velkost_sachovnice = 8  # default velkost
 kroky = []  # Kroky vykonané algoritmom pre vizualizáciu
 random_resety = 0  # counter random resetov pre Hill climbing
 
-# Problematika Hill climbing, optimum a random restard addition
-# slight alternations, napriklad large steps, alebo max iterations niesu, bude bezat pokial sa nezrobi...
-# https://en.wikipedia.org/wiki/Hill_climbing
-# https://algorithmafternoon.com/stochastic/stochastic_hill_climbing_with_random_restarts/
-
 
 # Funkcia na overenie, či je umiestnenie kráľovnej na šachovnici validné
-def valid(sachovnica, riadky, stlpce):
-    for i in range(riadky):
+def valid(sachovnica, rows, col):
+    for row in range(rows):
         # je na riadku alebo stlpci
-        if sachovnica[i] == stlpce:
+        # NOTE:
+        # dovolim si tvrdit ze je iba na rovnakom stlpci
+        # nemusime checkovat riadky
+        if sachovnica[row] == col:
             return False
 
         # je na diagonale
-        if abs(sachovnica[i] - stlpce) == abs(i - riadky):
+        # FIX:
+        # a co ked sachovnica[row]=-1?
+        if abs(sachovnica[row] - col) == abs(row - rows):
             return False
 
     # preslo
@@ -60,7 +75,14 @@ def dfs(sachovnica):
 
 
 # prosim zabi ma, nenavidim toto
-# hore mas informacie ku tejto problematike...
+# dobra inspiracia
+# https://www.youtube.com/watch?v=7fjmGWkv-sY&
+# Problematika Hill climbing, optimum a random restard addition
+# slight alternations, napriklad large steps, alebo max iterations niesu, bude bezat pokial sa nezrobi...
+# https://en.wikipedia.org/wiki/Hill_climbing
+# https://algorithmafternoon.com/stochastic/stochastic_hill_climbing_with_random_restarts/
+
+
 def hill_climbing(sachovnica):
     global kroky, random_resety
     kroky = []  # vynulovanie krokov, znova najprv iba counter, upravene na trackovanie pre GUI
@@ -159,7 +181,11 @@ def vykresli_sachovnicu(platno, kralovny):
             y = riadky * velkost_policka + velkost_policka // 2
             x = stlpce * velkost_policka + velkost_policka // 2
             platno.create_oval(
-                x - 20, y - 20, x + 20, y + 20, fill="red"
+                x - 0.5 * velkost_policka,
+                y - 0.5 * velkost_policka,
+                x + 0.5 * velkost_policka,
+                y + 0.5 * velkost_policka,
+                fill="red",
             )  # Nakreslí kráľovnú
 
 
