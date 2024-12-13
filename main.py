@@ -26,6 +26,177 @@ kroky = []  # Kroky vykonané algoritmom pre vizualizáciu
 random_resety = 0  # counter random resetov pre Hill climbing
 
 
+# Inspiration https://www.youtube.com/watch?v=X6m0DXt95bs
+# Forward checking MRV, LCV
+# Forward checking - eliminates boxes which our queen can move
+# MRV - picks up column with lowest possible choices, executes LCV if at more than 1 col empty
+#       otherwise put queen into col if only 1 choice
+# LCV - choose box which takes out least possible boxes
+
+
+def FML(chessboard, board_size):
+    global kroky
+    kroky = []  # vynulovanie
+    # puts first queen in random place
+    # row = random.randrange(board_size)
+    # col = random.randrange(board_size)
+    prev_moves = []
+    valid_stack = []
+
+    # start in top left corner
+    for row in range(board_size):
+        for col in range(board_size):
+            valid_stack = forward_checking(board_size, (row, col))
+            prev_moves[0] = (row, col)
+            chessboard[row] = col
+            kroky.append(list(chessboard))
+            queens = 1
+
+            while queens < board_size:
+                if not prev_moves:
+                    break
+                if queens == board_size:
+                    # congrat you found solution, do something and continue
+                    #    return chessboard
+                    return
+                if queens + valid_stack.size() < board_size:
+                    # clears whole stack
+                    # for i in len(prev_moves):
+                    #    chessboard[prev_moves[i][0]]=-1
+                    # backtrack
+                    # break
+                    chessboard[prev_moves.pop()[0]] = -1
+                    kroky.append(list(chessboard))
+                    queens -= 1
+                    # this is almost unneccessary but I don't know how to optimize
+                    valid_stack = forward_checking(
+                        board_size, prev_moves[len(prev_moves) - 1]
+                    )
+                    continue
+
+                optimal_row = MRV(valid_stack)
+                # only 1 option left, set board to abs value
+                if optimal_row < 0:
+                    chessboard[abs(optimal_row)] = valid_stack[abs(optimal_row)]
+                    prev_moves.append((abs(optimal_row), valid_stack[abs(optimal_row)]))
+                # multiple options on optimal_row perform lcv
+                else:
+                    lcv = LCV(board_size, optimal_row, valid_stack, prev_moves)
+                    valid_stack = lcv[1]
+                    chessboard[optimal_row] = lcv[2]
+
+                kroky.append(list(chessboard))
+                queens += 1
+
+        # clear
+        chessboard[row] = -1
+        kroky.append(list(chessboard))
+
+    # return
+
+
+def forward_checking(board_size, wherequeenplaced: (int, int)):
+    valid_stack = []
+    for row in range(board_size):
+        if row + 1 == wherequeenplaced[0] or row - 1 == wherequeenplaced[0]:
+            # . . . X X X . .
+            # . . . . 4 . . .
+            # . . . X X X . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            valid_stack[row] = [
+                *range(wherequeenplaced[1] - 1),
+                *range(wherequeenplaced[1] + 2, board_size),
+            ]
+            # elif row = wherequeenplaced[0]
+            # we don't need this
+            # . . . . . . . .
+            # X X X X 4 X X X
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+        elif row != wherequeenplaced[0]:
+            # . . . . . . . .
+            # . . . . 4 . . .
+            # . . . . . . . .
+            # . . X . X . X .
+            # . X . . X . . X
+            # X . . . X . . .
+            # . . . . X . . .
+            # . . . . X . . .
+            valid_stack[row] = [
+                # left diagonal
+                *range(wherequeenplaced[1] - abs(row - wherequeenplaced[0])),
+                # mid col diagonal
+                *range(
+                    wherequeenplaced[1] - abs(row - wherequeenplaced[0]) + 1,
+                    wherequeenplaced[1],
+                ),
+                *range(
+                    wherequeenplaced[1] + 1,
+                    wherequeenplaced[1] + abs(row - wherequeenplaced[0]),
+                ),
+                # right diagonal
+                *range(
+                    wherequeenplaced[1] + abs(row - wherequeenplaced[0]), board_size
+                ),
+            ]
+
+    return valid_stack
+
+
+# we do row based approach
+# each row consists of valid value, row with least amount of valid values is picked
+def MRV(board_size, valid_stack):
+    min = board_size
+    for row in range(board_size):
+        row_len = len(valid_stack[row])
+        if row_len == 1:
+            return -row
+        elif row_len < min and row_len != 0:
+            min = row
+
+    return min
+
+
+def LCV(board_size, row, valid_stack, backtracking_stack):
+    least_constaint_stack = []
+    _backtracking_stack = []
+
+    # for i, col in enumerate(valid_stack[row], start=0):
+    for col in valid_stack[row]:
+        new_valid_stack = forward_checking(board_size, (row, col))
+        duplicates = len(set(new_valid_stack) - set(valid_stack))
+
+        # intentional jumping
+        # least_constaint_stack[col] = (duplicates, new_valid_stack)
+        (duplicates, new_valid_stack, col)
+        # least_constaint_stack.append(duplicates)
+        # least_constaint_stack.append(forward_checking(board_size, (row, col)).size())
+        # least_constaint_stack[i] = forward_checking(board_size, (row, col)).size()
+        _backtracking_stack.append((row, col))
+
+    smallest = min(least_constaint_stack, key=lambda x: x[0])
+
+    # we do it this way to move smallest item first in fifo
+    for item in _backtracking_stack:
+        if item != smallest:
+            backtracking_stack.append(item)
+    backtracking_stack.append(smallest)
+
+    return smallest
+    # return col since we know row
+    # return least_constaint_stack.index(min(least_constaint_stack))
+
+
+# NOTE:
+# Maybe move this inside DFS
 # Funkcia na overenie, či je umiestnenie kráľovnej na šachovnici validné
 def valid(sachovnica, rows, col):
     for row in range(rows):
@@ -216,6 +387,13 @@ def ukaz_staty(sachovnica, root):
     elapsed_time_hc = time.perf_counter() - start_time_hc
     steps_taken_hc = len(kroky)
 
+    # Forwardchecking-MRV-LCV
+    start_time_fml = time.perf_counter()
+    # FIX: don't forget to enable this when FML actually works
+    # FML(sachovnica, velkost_sachovnice)
+    elapsed_time_fml = time.perf_counter() - start_time_fml
+    steps_taken_fml = len(kroky)
+
     # Výpis štatistík
     stats_message = (
         f"Algorithm: DFS\n"
@@ -225,6 +403,9 @@ def ukaz_staty(sachovnica, root):
         f"Time Taken: {elapsed_time_hc:.6f} seconds\n"
         f"Steps Taken: {steps_taken_hc}\n"
         f"Random Resets: {random_resety}\n"
+        f"Algorithm: Forwardchecking-MRV-LCV\n"
+        f"Time Taken: {elapsed_time_fml:.6f} seconds\n"
+        f"Steps Taken: {steps_taken_fml}\n"
     )
 
     stats_window = tk.Toplevel(root)
@@ -249,12 +430,11 @@ def executni_vyber(sachovnica, platno, root, typ_algoritmu, speed_var):
     elif algoritmus == "Hill-Climbing":
         hill_climbing(sachovnica)
         display_steps(platno, root)
+    elif algoritmus == "Forwardchecking-MRV-LCV":
+        FML(sachovnica, velkost_sachovnice)
+        display_steps(platno, root)
     elif algoritmus == "Show Stats":
         ukaz_staty(sachovnica, root)
-    elif algoritmus == "daj dole gate":
-        print("Som spokojny s vladou slovenskej republiky, said no one, ever")
-        # TODO
-        # more gadzo petooo
 
 
 # Vytvorenie GUI aplikácie
@@ -297,7 +477,7 @@ def gui():
     algorithm_menu = ttk.Combobox(
         control_panel,
         textvariable=typ_algoritmu,
-        values=["DFS", "Hill-Climbing", "Show Stats"],
+        values=["DFS", "Hill-Climbing", "Forwardchecking-MRV-LCV", "Show Stats"],
     )
     algorithm_menu.grid(row=0, column=1)
 
