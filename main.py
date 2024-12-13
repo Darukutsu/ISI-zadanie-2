@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import random
 
-medzera_medzi_krokmi = 0.4 # default rychlost.
+medzera_medzi_krokmi = 0.4  # default rychlost.
 
 sachovnica = []  # sachovnica a.k.a hlavne pole
 velkost_sachovnice = 8  # default velkost
@@ -12,8 +12,9 @@ random_resety = 0  # counter random resetov pre Hill climbing
 
 # Problematika Hill climbing, optimum a random restard addition
 # slight alternations, napriklad large steps, alebo max iterations niesu, bude bezat pokial sa nezrobi...
-#https://en.wikipedia.org/wiki/Hill_climbing
-#https://algorithmafternoon.com/stochastic/stochastic_hill_climbing_with_random_restarts/
+# https://en.wikipedia.org/wiki/Hill_climbing
+# https://algorithmafternoon.com/stochastic/stochastic_hill_climbing_with_random_restarts/
+
 
 # Funkcia na overenie, či je umiestnenie kráľovnej na šachovnici validné
 def valid(sachovnica, riadky, stlpce):
@@ -29,30 +30,34 @@ def valid(sachovnica, riadky, stlpce):
     # preslo
     return True
 
+
 # DFS N-Queens
 def dfs(sachovnica):
     global kroky
     kroky = []  # vynulovanie
 
     def solve(riadky=0):
-
-
         if riadky == velkost_sachovnice:  # vsetky kralovane su na sachovnici, solved...
             return True
 
-        for stlpce in range(velkost_sachovnice):    # prejdi celu sachovnicu
+        for stlpce in range(velkost_sachovnice):  # prejdi celu sachovnicu
             if valid(sachovnica, riadky, stlpce):  # isvalid ???
                 sachovnica[riadky] = stlpce
 
-                kroky.append(list(sachovnica))  # Ulož krok pre vizualizáciu neskor(originalne som mal len counter, ale GUI...)
+                kroky.append(
+                    list(sachovnica)
+                )  # Ulož krok pre vizualizáciu neskor(originalne som mal len counter, ale GUI...)
                 if solve(riadky + 1):  # Rekurzívne pokračuj na ďalší riadok
                     return True
 
                 sachovnica[riadky] = -1  # Spätné vyhľadávanie (Backtracking) TU !!!!
-                kroky.append(list(sachovnica))  # Ulož spätný krok pre vizualizáciu(znova len counter, neskor upravene na GUI)
+                kroky.append(
+                    list(sachovnica)
+                )  # Ulož spätný krok pre vizualizáciu(znova len counter, neskor upravene na GUI)
         return False
 
     solve()
+
 
 # prosim zabi ma, nenavidim toto
 # hore mas informacie ku tejto problematike...
@@ -65,7 +70,9 @@ def hill_climbing(sachovnica):
 
     # Iteruj cez každý riadok šachovnice
     for nopodstatne in range(velkost_sachovnice):
-        nahodny_stlpec = random.randint(0, velkost_sachovnice - 1)  # Generuj náhodný stĺpec pre daný riadok
+        nahodny_stlpec = random.randint(
+            0, velkost_sachovnice - 1
+        )  # Generuj náhodný stĺpec pre daný riadok
         stav.append(nahodny_stlpec)  # radnom
 
     # Funkcia na spočítanie konfliktov na šachovnici
@@ -74,8 +81,9 @@ def hill_climbing(sachovnica):
 
         # Prejdeme každú dvojicu kráľovien
         for i in range(len(stav)):
-            for j in range(i + 1, len(stav)):  # Porovnávame iba unikátne dvojice (bez opakovania)
-
+            for j in range(
+                i + 1, len(stav)
+            ):  # Porovnávame iba unikátne dvojice (bez opakovania)
                 # Skontrolujeme, či sú kráľovné v tom istom stĺpci
                 if stav[i] == stav[j]:
                     konflikty += 1
@@ -116,7 +124,9 @@ def hill_climbing(sachovnica):
             stav = []  # vynulovanie
 
             for zbytocne in range(velkost_sachovnice):  # iterate
-                nahodny_stlpec = random.randint(0, velkost_sachovnice - 1)  # Generujem náhodný stĺpec
+                nahodny_stlpec = random.randint(
+                    0, velkost_sachovnice - 1
+                )  # Generujem náhodný stĺpec
                 stav.append(nahodny_stlpec)  # add do zoznamu stavov
 
             random_resety += 1  # zvys pocet random state
@@ -129,7 +139,6 @@ def vykresli_sachovnicu(platno, kralovny):
 
     for i in range(velkost_sachovnice):  # Iterujeme cez všetky riadky šachovnice
         for j in range(velkost_sachovnice):  # Iterujeme cez všetky stĺpce šachovnice
-
             # farba bola, cez simple modulo
             if (i + j) % 2 == 0:
                 farba = "white"
@@ -142,14 +151,17 @@ def vykresli_sachovnicu(platno, kralovny):
                 i * velkost_policka,  # Y-súradnica lavy roh
                 (j + 1) * velkost_policka,  # X-súradnica pravy roh
                 (i + 1) * velkost_policka,  # Y-súradnica pravy roh
-                fill=farba  # Farba políčka
+                fill=farba,  # Farba políčka
             )
 
     for stlpce, riadky in enumerate(kralovny):
         if riadky != -1:
             y = riadky * velkost_policka + velkost_policka // 2
             x = stlpce * velkost_policka + velkost_policka // 2
-            platno.create_oval(x - 20, y - 20, x + 20, y + 20, fill="red")  # Nakreslí kráľovnú
+            platno.create_oval(
+                x - 20, y - 20, x + 20, y + 20, fill="red"
+            )  # Nakreslí kráľovnú
+
 
 # Zobrazenie krokov vizualizácie
 def display_steps(platno, root):
@@ -159,6 +171,7 @@ def display_steps(platno, root):
         vykresli_sachovnicu(platno, krok)
         root.update()  # Aktualizuje GUI
         time.sleep(medzera_medzi_krokmi)  # Pauza medzi krokmi
+
 
 # Zobrazenie štatistík algoritmov
 def ukaz_staty(sachovnica, root):
@@ -190,7 +203,10 @@ def ukaz_staty(sachovnica, root):
 
     stats_window = tk.Toplevel(root)
     stats_window.title("Algorithm Statistics")
-    tk.Label(stats_window, text=stats_message, justify="left", font=("Arial", 12)).pack(padx=10, pady=10)
+    tk.Label(stats_window, text=stats_message, justify="left", font=("Arial", 12)).pack(
+        padx=10, pady=10
+    )
+
 
 # Výber algoritmu a vykonanie akcie
 def executni_vyber(sachovnica, platno, root, typ_algoritmu, speed_var):
@@ -214,6 +230,7 @@ def executni_vyber(sachovnica, platno, root, typ_algoritmu, speed_var):
         # TODO
         # more gadzo petooo
 
+
 # Vytvorenie GUI aplikácie
 def gui():
     global sachovnica, velkost_sachovnice, medzera_medzi_krokmi
@@ -227,7 +244,9 @@ def gui():
             velkost_sachovnice = nova_velkost
             sachovnica = [-1] * velkost_sachovnice
         except ValueError:
-            tk.messagebox.showerror("Invalid Input", "Please enter a valid size (4 or larger).")
+            tk.messagebox.showerror(
+                "Invalid Input", "Please enter a valid size (4 or larger)."
+            )
 
     root = tk.Tk()
     root.title("NQueens Solver")
@@ -249,7 +268,11 @@ def gui():
     tk.Label(control_panel, text="Algorithm:").grid(row=0, column=0)
 
     typ_algoritmu = tk.StringVar(value="DFS")
-    algorithm_menu = ttk.Combobox(control_panel, textvariable=typ_algoritmu, values=["DFS", "Hill-Climbing", "Show Stats"])
+    algorithm_menu = ttk.Combobox(
+        control_panel,
+        textvariable=typ_algoritmu,
+        values=["DFS", "Hill-Climbing", "Show Stats"],
+    )
     algorithm_menu.grid(row=0, column=1)
 
     tk.Label(control_panel, text="Visualization Speed (sec):").grid(row=1, column=0)
@@ -257,8 +280,15 @@ def gui():
     speed_entry = tk.Entry(control_panel, textvariable=speed_var)
     speed_entry.grid(row=1, column=1)
 
-    tk.Button(control_panel, text="Execute", command=lambda: executni_vyber(sachovnica, platno, root, typ_algoritmu, speed_var)).grid(row=1, column=2)
+    tk.Button(
+        control_panel,
+        text="Execute",
+        command=lambda: executni_vyber(
+            sachovnica, platno, root, typ_algoritmu, speed_var
+        ),
+    ).grid(row=1, column=2)
 
     root.mainloop()
+
 
 gui()
