@@ -25,6 +25,34 @@ velkost_sachovnice = 8  # default velkost
 kroky = []  # Kroky vykonané algoritmom pre vizualizáciu
 random_resety = 0  # counter random resetov pre Hill climbing
 
+# MINMAX
+# ALG
+# minmax je 2player algoritmus pri ktorom si urcime hlbku do akej budeme
+# chciet evaluevovat hodnoty binarneho stromu. Hrac1 preferuje hodnoty vyssie a Hrac2 nizsie.
+# Kazdy node na rovnakej urovni ma rovnakeho vlastnika. Vlastnici sa striedaju medzi urovnami
+#               1
+#           2       2
+#          1 1     1 1      <-- posledna uroven ma iba hodnoty z ktory sa vybera do vyssej
+#              ...          <-- viac urovni
+# hraci si vyberaju podla svojho nastavenia hodnoty z nodu
+# e.g. ak hrac 1 ma na vyber medzi 4 a 7 vyberie si 7 pretoze je vyssia a on preferuje vyssie
+#
+# IMPLEMENTACIA
+# kedze nasa hra nie je pre 2 hracov rozhodol som sa upravit tuto implementaciu.
+# kazdy node ma ako hodnotu pocet queens v danych validnych tahoch.
+# depth = pocet validnych tahov
+# depth=depth+1 lebo posledna uroven su iba hodnoty
+# tahy su random, ak sa pri overovani sachovnice zisti ze nejaky tah je neplatny recalculujeme
+# neplatne tahy? || alebo vsetko pre dany node UVIDIM
+# potom na zaklade urovne(lvl) sa rozhodne ktore node uprednostnime a napisemeho do nodu
+#              MAX
+#         MIN       MIN
+#       MIX MAX   MIX MAX
+#              ...          <-- viac urovni
+# probably stupid idea skip this
+#
+# def minmax(sachovnica, depth, ismore):
+
 
 # Inspiration https://www.youtube.com/watch?v=X6m0DXt95bs
 # Forward checking MRV, LCV
@@ -243,6 +271,47 @@ def dfs(sachovnica):
         return False
 
     solve()
+
+
+# This is my try on implementing hillclimb
+# later I discover coleague already implemented it, leave this as comment
+# Hillclimbing
+# randomize state, put on each row queen
+# check for conflicts, store checkboards with conflicts in stack
+# choose checkboard with lowest possible conflicts, and repeat
+# Inspiration
+# https://www.youtube.com/watch?v=7fjmGWkv-sY&
+#
+# if stack_size 0 stack is set to 10 but imediatelly when board with less conflicts appear
+# it is chosen and stack is discarted
+# def hillclimb(velkost_sachovnice):
+#    stack = []
+#    stack_size=(velkost_sachovnice-1)*velkost_sachovnice
+#
+#    def generate_board():
+#        checkboard = []
+#        for row in range(velkost_sachovnice):
+#            checkboard[row] = random.randrange(velkost_sachovnice)
+#        return checkboard
+#
+#    for i in range(stack_size):
+#        stack[i] = generate_board()
+#
+#    def return_conflicts(checkboard, velkost_sachovnice):
+#        conflicts=0
+#
+#        # each queen generates same conflicts so at the end divide by 2
+#        # optimization could be check only downward
+#        for row in range(velkost_sachovnice):
+#            if checkboard[row] == col
+#                conflicts+=1
+#
+#            if abs(sachovnica[row] - col) == abs(row - rows):
+#                conflicts+=1
+#        return conflicts/2
+#
+#    def least_conflicts(stack):
+#        conflicts=
 
 
 # prosim zabi ma, nenavidim toto
