@@ -23,6 +23,7 @@ medzera_medzi_krokmi = 0.4  # default rychlost.
 sachovnica = []  # sachovnica a.k.a hlavne pole
 velkost_sachovnice = 8  # default velkost
 kroky = []  # Kroky vykonané algoritmom pre vizualizáciu
+alternate_steps = []  # pre FML algoritmus
 random_resety = 0  # counter random resetov pre Hill climbing
 
 # MINMAX
@@ -60,23 +61,35 @@ random_resety = 0  # counter random resetov pre Hill climbing
 # MRV - picks up column with lowest possible choices, executes LCV if at more than 1 col empty
 #       otherwise put queen into col if only 1 choice
 # LCV - choose box which takes out least possible boxes
+def _elements_in_array(arr):
+    count = 0
+    for elem in arr:
+        if isinstance(elem, list):
+            count += _elements_in_array(elem)
+        else:
+            count += 1
+    return count
 
 
 def FML(chessboard, board_size):
+    global alternate_steps
+    alternate_steps = []
     global kroky
     kroky = []  # vynulovanie
-    # puts first queen in random place
-    # row = random.randrange(board_size)
-    # col = random.randrange(board_size)
     prev_moves = []
     valid_stack = []
 
     # start in top left corner
     for row in range(board_size):
         for col in range(board_size):
-            valid_stack = forward_checking(board_size, (row, col))
-            prev_moves[0] = (row, col)
+            valid_stack = forward_checking(board_size, (row, col), alternate_steps)
+            # puts first queen in random place
+            # row = random.randrange(board_size)
+            # col = random.randrange(board_size)
+            prev_moves.append((row, col))
             chessboard[row] = col
+            # this is bluf because we wanna display green balls
+            # for i in range(len()):
             kroky.append(list(chessboard))
             queens = 1
 
@@ -86,30 +99,39 @@ def FML(chessboard, board_size):
                 if queens == board_size:
                     # congrat you found solution, do something and continue
                     #    return chessboard
+                    print("FOUND ALL QUEEN")
                     return
-                if queens + valid_stack.size() < board_size:
+                # if queens + valid_stack.size() < board_size:
+                if queens + _elements_in_array(valid_stack) < board_size:
                     # clears whole stack
                     # for i in len(prev_moves):
                     #    chessboard[prev_moves[i][0]]=-1
                     # backtrack
                     # break
+                    print("invalid position backtracking")
                     chessboard[prev_moves.pop()[0]] = -1
                     kroky.append(list(chessboard))
                     queens -= 1
                     # this is almost unneccessary but I don't know how to optimize
                     valid_stack = forward_checking(
-                        board_size, prev_moves[len(prev_moves) - 1]
+                        board_size, prev_moves[len(prev_moves) - 1], alternate_steps
                     )
                     continue
 
-                optimal_row = MRV(valid_stack)
+                optimal_row = MRV(board_size, valid_stack)
                 # only 1 option left, set board to abs value
                 if optimal_row < 0:
                     chessboard[abs(optimal_row)] = valid_stack[abs(optimal_row)]
                     prev_moves.append((abs(optimal_row), valid_stack[abs(optimal_row)]))
                 # multiple options on optimal_row perform lcv
                 else:
-                    lcv = LCV(board_size, optimal_row, valid_stack, prev_moves)
+                    lcv = LCV(
+                        board_size,
+                        optimal_row,
+                        valid_stack,
+                        prev_moves,
+                        alternate_steps,
+                    )
                     valid_stack = lcv[1]
                     chessboard[optimal_row] = lcv[2]
 
@@ -123,8 +145,15 @@ def FML(chessboard, board_size):
     # return
 
 
-def forward_checking(board_size, wherequeenplaced: (int, int)):
+def forward_checking(board_size, wherequeenplaced: (int, int), alternate_steps):
+    # calculate free positions for new queen placement
+    #
+    # because we do not append to existing valid_stack and calculate it this way
+    # for each new queen separatelly, we are unable to display properly green balls
+    # which would symbolize possible queen placements
     valid_stack = []
+    chessboard = [-1] * board_size
+    alternate_steps.append(list(chessboard))
     for row in range(board_size):
         if row + 1 == wherequeenplaced[0] or row - 1 == wherequeenplaced[0]:
             # . . . X X X . .
@@ -135,12 +164,17 @@ def forward_checking(board_size, wherequeenplaced: (int, int)):
             # . . . . . . . .
             # . . . . . . . .
             # . . . . . . . .
-            valid_stack[row] = [
-                *range(wherequeenplaced[1] - 1),
-                *range(wherequeenplaced[1] + 2, board_size),
-            ]
-            # elif row = wherequeenplaced[0]
-            # we don't need this
+            valid_stack.append(
+                [
+                    *range(wherequeenplaced[1] - 1),
+                    *range(wherequeenplaced[1] + 2, board_size),
+                ]
+            )
+            # FIX: uncomment when different implementation chosen
+            # for col in valid_stack[len(valid_stack) - 1]:
+            #    chessboard[row] = col
+        elif row == wherequeenplaced[0]:
+            valid_stack.append([])
             # . . . . . . . .
             # X X X X 4 X X X
             # . . . . . . . .
@@ -158,24 +192,30 @@ def forward_checking(board_size, wherequeenplaced: (int, int)):
             # X . . . X . . .
             # . . . . X . . .
             # . . . . X . . .
-            valid_stack[row] = [
-                # left diagonal
-                *range(wherequeenplaced[1] - abs(row - wherequeenplaced[0])),
-                # mid col diagonal
-                *range(
-                    wherequeenplaced[1] - abs(row - wherequeenplaced[0]) + 1,
-                    wherequeenplaced[1],
-                ),
-                *range(
-                    wherequeenplaced[1] + 1,
-                    wherequeenplaced[1] + abs(row - wherequeenplaced[0]),
-                ),
-                # right diagonal
-                *range(
-                    wherequeenplaced[1] + abs(row - wherequeenplaced[0]), board_size
-                ),
-            ]
+            valid_stack.append(
+                [
+                    # left diagonal
+                    *range(wherequeenplaced[1] - abs(row - wherequeenplaced[0])),
+                    # mid col diagonal
+                    *range(
+                        wherequeenplaced[1] - abs(row - wherequeenplaced[0]) + 1,
+                        wherequeenplaced[1],
+                    ),
+                    *range(
+                        wherequeenplaced[1] + 1,
+                        wherequeenplaced[1] + abs(row - wherequeenplaced[0]),
+                    ),
+                    # right diagonal
+                    *range(
+                        wherequeenplaced[1] + abs(row - wherequeenplaced[0]), board_size
+                    ),
+                ]
+            )
+            # FIX: uncomment when different implementation chosen
+            # for col in valid_stack[len(valid_stack) - 1]:
+            #    chessboard[row] = col
 
+    alternate_steps.append(list(chessboard))
     return valid_stack
 
 
@@ -193,24 +233,29 @@ def MRV(board_size, valid_stack):
     return min
 
 
-def LCV(board_size, row, valid_stack, backtracking_stack):
-    least_constaint_stack = []
+def LCV(board_size, row, valid_stack, backtracking_stack, alternate_steps):
+    least_constraint_stack = []
     _backtracking_stack = []
 
-    # for i, col in enumerate(valid_stack[row], start=0):
     for col in valid_stack[row]:
-        new_valid_stack = forward_checking(board_size, (row, col))
-        duplicates = len(set(new_valid_stack) - set(valid_stack))
+        new_valid_stack = forward_checking(board_size, (row, col), alternate_steps)
+        set_new_valid_stack = set(map(tuple, new_valid_stack))
+        set_valid_stack = set(map(tuple, valid_stack))
+        taken_space = len(set_new_valid_stack - set_valid_stack)
 
-        # intentional jumping
-        # least_constaint_stack[col] = (duplicates, new_valid_stack)
-        (duplicates, new_valid_stack, col)
-        # least_constaint_stack.append(duplicates)
-        # least_constaint_stack.append(forward_checking(board_size, (row, col)).size())
-        # least_constaint_stack[i] = forward_checking(board_size, (row, col)).size()
+        least_constraint_stack.append((taken_space, new_valid_stack, col))
         _backtracking_stack.append((row, col))
 
-    smallest = min(least_constaint_stack, key=lambda x: x[0])
+    # logic behind this is if we have A(valid_stack) and B(new_valid_stack) array
+    # A             B
+    # . . . X       . X X X
+    # . . . X       . X X X
+    # . . . .       . . . .
+    # . . . .       . . . .
+    # then their intersection will result in 4new taken places(X, places where we can't put queen)
+    # we store all diff-counts in least_constraint_stack
+    # in the end we take that array which intersection has taken out least amount of possible places
+    smallest = min(least_constraint_stack, key=lambda x: x[0])
 
     # we do it this way to move smallest item first in fifo
     for item in _backtracking_stack:
@@ -219,8 +264,6 @@ def LCV(board_size, row, valid_stack, backtracking_stack):
     backtracking_stack.append(smallest)
 
     return smallest
-    # return col since we know row
-    # return least_constaint_stack.index(min(least_constaint_stack))
 
 
 # NOTE:
@@ -395,7 +438,7 @@ def hill_climbing(sachovnica):
 
 
 # vykreslenie
-def vykresli_sachovnicu(platno, kralovny):
+def vykresli_sachovnicu(platno, kralovny, alternate_queens):
     platno.delete("all")  # Vymaž
     velkost_policka = 600 // velkost_sachovnice  # zmenene kvoli N moze byt variabilne
 
@@ -428,13 +471,29 @@ def vykresli_sachovnicu(platno, kralovny):
                 fill="red",
             )  # Nakreslí kráľovnú
 
+    if alternate_steps:
+        for stlpce, riadky in enumerate(alternate_queens):
+            if riadky != -1:
+                y = riadky * velkost_policka + velkost_policka // 2
+                x = stlpce * velkost_policka + velkost_policka // 2
+                platno.create_oval(
+                    x - 0.5 * velkost_policka,
+                    y - 0.5 * velkost_policka,
+                    x + 0.5 * velkost_policka,
+                    y + 0.5 * velkost_policka,
+                    fill="green",
+                )  # Nakreslí alternativne kráľovne
+
 
 # Zobrazenie krokov vizualizácie
 def display_steps(platno, root):
     #  medzera_medzi_krokmi je teraz variabilna a moze byt zmenena uzivatelom
-    global kroky, medzera_medzi_krokmi
-    for krok in kroky:
-        vykresli_sachovnicu(platno, krok)
+    global kroky, medzera_medzi_krokmi, alternate_steps
+    for i, krok in enumerate(kroky):
+        if alternate_steps:
+            vykresli_sachovnicu(platno, krok, alternate_steps[i])
+        else:
+            vykresli_sachovnicu(platno, krok, alternate_steps)
         root.update()  # Aktualizuje GUI
         time.sleep(medzera_medzi_krokmi)  # Pauza medzi krokmi
 
@@ -458,8 +517,7 @@ def ukaz_staty(sachovnica, root):
 
     # Forwardchecking-MRV-LCV
     start_time_fml = time.perf_counter()
-    # FIX: don't forget to enable this when FML actually works
-    # FML(sachovnica, velkost_sachovnice)
+    FML(sachovnica, velkost_sachovnice)
     elapsed_time_fml = time.perf_counter() - start_time_fml
     steps_taken_fml = len(kroky)
 
@@ -471,10 +529,10 @@ def ukaz_staty(sachovnica, root):
         f"Algorithm: Hill-Climbing\n"
         f"Time Taken: {elapsed_time_hc:.6f} seconds\n"
         f"Steps Taken: {steps_taken_hc}\n"
-        f"Random Resets: {random_resety}\n"
+        f"Random Resets: {random_resety}\n\n"
         f"Algorithm: Forwardchecking-MRV-LCV\n"
         f"Time Taken: {elapsed_time_fml:.6f} seconds\n"
-        f"Steps Taken: {steps_taken_fml}\n"
+        f"Steps Taken: {steps_taken_fml}\n\n"
     )
 
     stats_window = tk.Toplevel(root)
@@ -486,13 +544,15 @@ def ukaz_staty(sachovnica, root):
 
 # Výber algoritmu a vykonanie akcie
 def executni_vyber(sachovnica, platno, root, typ_algoritmu, speed_var):
-    global medzera_medzi_krokmi, velkost_sachovnice
+    global medzera_medzi_krokmi, velkost_sachovnice, alternate_steps
     try:
         medzera_medzi_krokmi = float(speed_var.get())
     except ValueError:
         medzera_medzi_krokmi = 0.4  # Predvolená hodnota pri chybe
     sachovnica = [-1] * velkost_sachovnice  # Inicializácia šachovnice
     algoritmus = typ_algoritmu.get()
+
+    alternate_steps = []  # deinit for other algorithms
     if algoritmus == "DFS":
         dfs(sachovnica)
         display_steps(platno, root)
